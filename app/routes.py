@@ -29,42 +29,72 @@ async def get_me(user: dict = Depends(get_current_user)):
 # --- User Task APIs ---
 
 @router.get("/api/tasks/today")
-async def get_today_task(user: dict = Depends(require_user)):
-    """Get current user's task for today."""
-    today = get_today_str()
+async def get_today_task(
+    date: Optional[str] = Query(None),
+    user: dict = Depends(require_user)
+):
+    """Get current user's task for today (or specific date)."""
+    target_date = date or get_today_str()
     uid = user["uid"]
     
-    task = db.tasks.find_one({"user_id": uid, "date": today}, {"_id": 0})
+    task = db.tasks.find_one({"user_id": uid, "date": target_date}, {"_id": 0})
     
     if task:
-        logger.info(f"Task found for user {uid} on {today}")
+        # logger.info(f"Task found for user {uid} on {target_date}")
         return {"exists": True, "task": task}
     else:
-        logger.info(f"No task found for user {uid} on {today}")
+        # logger.info(f"No task found for user {uid} on {target_date}")
+        return {"exists": False, "task": None}
+
+@router.get("/api/tasks/previous")
+async def get_previous_task(
+    before_date: Optional[str] = Query(None),
+    user: dict = Depends(require_user)
+):
+    """Get the most recent task strictly BEFORE the given date (default today)."""
+    target_date = before_date or get_today_str()
+    uid = user["uid"]
+    
+    # Find latest task where date < target_date
+    task = db.tasks.find_one(
+        {"user_id": uid, "date": {"$lt": target_date}},
+        sort=[("date", -1)]
+    )
+    
+    if task:
+        if "_id" in task: del task["_id"]
+        return {"exists": True, "task": task}
+    else:
         return {"exists": False, "task": None}
 
 @router.post("/api/tasks/save")
 async def save_task(task_data: TaskSave, user: dict = Depends(require_user)):
-    """Upsert task for today."""
+    """Upsert task for today (or specific date)."""
     uid = user["uid"]
     today = get_today_str()
-    day_name = get_day_name(today)
+    
+    # Use date from payload if provided, else today
+    target_date = task_data.date or today
+    day_name = get_day_name(target_date)
     
     # Prepare update data
     update_doc = task_data.dict(exclude_unset=True)
+    if "date" in update_doc:
+        del update_doc["date"] # Don't update the date field itself inside the doc structure if it's the key
+        
     update_doc["updated_at"] = datetime.utcnow()
     
     # On insert only fields
     insert_doc = {
         "user_id": uid,
-        "date": today,
-        "owner_name": user.get("name") or user.get("email", "Unknown"), # Fallback to email if name missing
+        "date": target_date,
+        "owner_name": user.get("name") or user.get("email", "Unknown"),
         "planner": day_name,
         "created_at": datetime.utcnow()
     }
     
     result = db.tasks.update_one(
-        {"user_id": uid, "date": today},
+        {"user_id": uid, "date": target_date},
         {
             "$set": update_doc,
             "$setOnInsert": insert_doc
@@ -72,7 +102,7 @@ async def save_task(task_data: TaskSave, user: dict = Depends(require_user)):
         upsert=True
     )
     
-    logger.info(f"Task saved for user {uid} on {today}. Modified: {result.modified_count}, Upserted: {result.upserted_id}")
+    logger.info(f"Task saved for user {uid} on {target_date}.")
     return {"message": "Task saved"}
 
 @router.get("/api/tasks/history")

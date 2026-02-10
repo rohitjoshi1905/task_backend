@@ -3,7 +3,7 @@ from typing import Optional, Any
 from datetime import datetime
 
 class TaskSave(BaseModel):
-    status: Optional[str] = Field("Pending")
+    status: Optional[str] = Field("Not Started")
     assign_website: Optional[str] = ""
     task_assign_no: Optional[str] = ""
     other_tasks: Optional[str] = ""
@@ -11,6 +11,7 @@ class TaskSave(BaseModel):
     additional: Optional[str] = ""
     note: Optional[str] = ""
     total_pages_done: Optional[int] = 0
+    date: Optional[str] = None # Support saving for specific dates
 
 class TaskResponse(BaseModel):
     user_id: str
