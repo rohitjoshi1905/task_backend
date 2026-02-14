@@ -19,6 +19,11 @@ app.add_middleware(
 
 app.include_router(router)
 
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "Task Planner Backend is running!"}
+
+
 @app.on_event("startup")
 async def startup_event():
     logger.info("Server started")
