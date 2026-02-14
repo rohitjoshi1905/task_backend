@@ -8,7 +8,7 @@ security = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
-    Verifies token, checks if user exists in MongoDB, and returns user document.
+    Verifies JWT token, checks if user exists in MongoDB, and returns user document.
     """
     token = credentials.credentials
     decoded_token = verify_token(token)
@@ -24,13 +24,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user = db.users.find_one({"uid": uid})
     
     if not user:
-        logger.warning(f"User found in Firebase but NOT in MongoDB: {uid}")
+        logger.warning(f"Token valid but user NOT found in MongoDB: {uid}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found in database",
         )
 
-    # Attach email from token if missing (though we rely on DB)
+    # Attach email from token if missing
     if not user.get("email"):
         user["email"] = decoded_token.get("email")
 

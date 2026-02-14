@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routes import router
 from .logger import logger
 from .db import db # Initialize DB connection
-from .firebase import firebase_admin # Initialize Firebase (ensure this module runs)
 
 app = FastAPI()
 

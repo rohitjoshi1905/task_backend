@@ -10,6 +10,7 @@ class TaskSave(BaseModel):
     task_updates: Optional[str] = ""
     additional: Optional[str] = ""
     note: Optional[str] = ""
+    note: Optional[str] = ""
     total_pages_done: Optional[int] = 0
     date: Optional[str] = None # Support saving for specific dates
 
@@ -24,6 +25,7 @@ class TaskResponse(BaseModel):
     other_tasks: Optional[str]
     task_updates: Optional[str]
     additional: Optional[str]
+    note: Optional[str]
     note: Optional[str]
     total_pages_done: Optional[int]
     created_at: Optional[datetime]
